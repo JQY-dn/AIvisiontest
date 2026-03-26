@@ -1,0 +1,114 @@
+﻿<prism:PrismApplication x:Class="AIvisiontest.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:AIvisiontest"
+             xmlns:prism="http://prismlibrary.com/" >
+    <Application.Resources>
+        <Style x:Key="ModeToggleBtn" TargetType="ToggleButton">
+            <Setter Property="FontFamily"  Value="Consolas"/>
+            <Setter Property="FontSize"    Value="12"/>
+            <Setter Property="Foreground"  Value="#8800FF88"/>
+            <Setter Property="Background"  Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="#3300FF88"/>
+            <Setter Property="Padding"     Value="14,5"/>
+            <Setter Property="Cursor"      Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToggleButton">
+                        <Border x:Name="Bd"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- 选中高亮 -->
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2200FF88"/>
+                                <Setter Property="Foreground"                 Value="#FF00FF88"/>
+                            </Trigger>
+                            <!-- Hover -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#1500FF88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NavArrowBtn" TargetType="Button">
+            <Setter Property="Width"           Value="40"/>
+            <Setter Property="Height"          Value="40"/>
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily"      Value="Consolas"/>
+            <Setter Property="FontSize"        Value="22"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Grid>
+                            <!-- 热区光晕 -->
+                            <Ellipse x:Name="Glow"
+                             Fill="Transparent"
+                             Stretch="Uniform"
+                             Margin="4"/>
+                            <!-- 箭头 -->
+                            <TextBlock x:Name="Arrow"
+                               Text="{TemplateBinding Content}"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Foreground="#FF00FF88"
+                               FontFamily="Consolas"
+                               FontSize="{TemplateBinding FontSize}">
+                                <TextBlock.Effect>
+                                    <DropShadowEffect x:Name="ArrowGlow"
+                                              Color="#FF00FF88"
+                                              BlurRadius="8"
+                                              ShadowDepth="0"
+                                              Opacity="0.8"/>
+                                </TextBlock.Effect>
+                            </TextBlock>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <!-- Hover：热区点亮 -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Glow"  Property="Fill"       Value="#1A00FF88"/>
+                                <Setter TargetName="Arrow" Property="Foreground" Value="#FFFFFFFF"/>
+                            </Trigger>
+
+                            <!-- Press：收缩感 -->
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Glow" Property="Fill"   Value="#3300FF88"/>
+                                <Setter TargetName="Glow" Property="Margin" Value="8"/>
+                                <Setter TargetName="Arrow" Property="RenderTransform">
+                                    <Setter.Value>
+                                        <ScaleTransform ScaleX="0.85" ScaleY="0.85"
+                                                CenterX="20"  CenterY="20"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+
+                            <!-- Disabled：仅颜色变淡，发光熄灭 -->
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Arrow" Property="Foreground" Value="#33888888"/>
+                                <Setter TargetName="Arrow" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#00000000"
+                                                  BlurRadius="0"
+                                                  ShadowDepth="0"
+                                                  Opacity="0"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</prism:PrismApplication>

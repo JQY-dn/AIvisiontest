@@ -1,0 +1,249 @@
+﻿<Window x:Class="AIvisiontest.Views.ToastWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AIvisiontest.Views"
+        mc:Ignorable="d"
+        Width="340" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True"
+        Background="Transparent" Topmost="True"
+        ShowInTaskbar="False" IsHitTestVisible="True"
+        Focusable="False" ShowActivated="False">
+    
+    <Window.Resources>
+
+        <!-- ── 颜色资源 ── -->
+        <Color x:Key="SurfaceColor">#1E2433</Color>
+        <Color x:Key="BorderColor">#2A3347</Color>
+
+        <SolidColorBrush x:Key="SurfaceBrush"  Color="{StaticResource SurfaceColor}"/>
+        <SolidColorBrush x:Key="BorderBrush"   Color="{StaticResource BorderColor}"/>
+        <SolidColorBrush x:Key="TextBrush"      Color="#E2E8F0"/>
+        <SolidColorBrush x:Key="MutedBrush"     Color="#64748B"/>
+        <SolidColorBrush x:Key="LoadingBrush"   Color="#3B82F6"/>
+        <SolidColorBrush x:Key="SuccessBrush"   Color="#22C55E"/>
+        <SolidColorBrush x:Key="ErrorBrush"     Color="#EF4444"/>
+
+        <!-- ── 旋转动画（加载中图标） ── -->
+        <Storyboard x:Key="SpinStoryboard" RepeatBehavior="Forever">
+            <DoubleAnimation Storyboard.TargetName="SpinIcon"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)"
+                             From="0" To="360" Duration="0:0:0.9"/>
+        </Storyboard>
+
+        <!-- ── 进度条收缩动画 ── -->
+        <Storyboard x:Key="ProgressStoryboard" x:Name="ProgressStoryboard">
+            <DoubleAnimation Storyboard.TargetName="ProgressBar"
+                             Storyboard.TargetProperty="Width"
+                             From="316" To="0"
+                             Duration="0:0:4"/>
+        </Storyboard>
+
+        <!-- ── 入场动画 ── -->
+        <Storyboard x:Key="SlideInStoryboard">
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootCard"
+                                           Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)">
+                <EasingDoubleKeyFrame KeyTime="0:0:0"    Value="30"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:0.28" Value="0">
+                    <EasingDoubleKeyFrame.EasingFunction>
+                        <BackEase EasingMode="EaseOut" Amplitude="0.3"/>
+                    </EasingDoubleKeyFrame.EasingFunction>
+                </EasingDoubleKeyFrame>
+            </DoubleAnimationUsingKeyFrames>
+            <DoubleAnimationUsingKeyFrames Storyboard.TargetName="RootCard"
+                                           Storyboard.TargetProperty="Opacity">
+                <EasingDoubleKeyFrame KeyTime="0:0:0"    Value="0"/>
+                <EasingDoubleKeyFrame KeyTime="0:0:0.22" Value="1"/>
+            </DoubleAnimationUsingKeyFrames>
+        </Storyboard>
+
+        <!-- ── 离场动画 ── -->
+        <Storyboard x:Key="SlideOutStoryboard" Completed="SlideOut_Completed">
+            <DoubleAnimation Storyboard.TargetName="RootCard"
+                             Storyboard.TargetProperty="(UIElement.RenderTransform).(TranslateTransform.X)"
+                             From="0" To="30" Duration="0:0:0.2">
+                <DoubleAnimation.EasingFunction>
+                    <CubicEase EasingMode="EaseIn"/>
+                </DoubleAnimation.EasingFunction>
+            </DoubleAnimation>
+            <DoubleAnimation Storyboard.TargetName="RootCard"
+                             Storyboard.TargetProperty="Opacity"
+                             From="1" To="0" Duration="0:0:0.18"/>
+        </Storyboard>
+
+    </Window.Resources>
+
+    <!-- ── 外层：用于承载阴影 ── -->
+    <Border Padding="12,0,0,12">
+        <Border x:Name="RootCard"
+                CornerRadius="10"
+                Background="{StaticResource SurfaceBrush}"
+                ClipToBounds="True"
+                RenderTransformOrigin="1,0.5"
+                Opacity="0">
+            <Border.RenderTransform>
+                <TranslateTransform X="30"/>
+            </Border.RenderTransform>
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="24" ShadowDepth="4"
+                                  Direction="270" Opacity="0.55"
+                                  Color="#050810"/>
+            </Border.Effect>
+
+            <!-- 左侧彩色边条 -->
+            <Border.BorderBrush>
+                <SolidColorBrush x:Name="CardBorderBrush" Color="#2A3347"/>
+            </Border.BorderBrush>
+            <Border.BorderThickness>1</Border.BorderThickness>
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- ── 内容区 ── -->
+                <Grid Grid.Row="0" Margin="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="3"/>
+                        <!-- 左侧色条 -->
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- 左色条 -->
+                    <Rectangle Grid.Column="0" x:Name="AccentBar"
+                               Fill="{StaticResource LoadingBrush}"
+                               RadiusX="2" RadiusY="2"/>
+
+                    <!-- 主内容 -->
+                    <Grid Grid.Column="1" Margin="14,14,14,14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <!-- 图标区 -->
+                        <Grid Grid.Column="0" Width="22" Height="22" Margin="0,1,12,0"
+                              VerticalAlignment="Top">
+
+                            <!-- Loading 图标（转圈） -->
+                            <Ellipse x:Name="LoadingIcon" Width="20" Height="20"
+                                     Stroke="#3B82F6" StrokeThickness="2.2"
+                                     StrokeDashArray="12,6"
+                                     Visibility="Collapsed">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform CenterX="10" CenterY="10"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <!-- 用 Path 做更精致的 spinner -->
+                            <Path x:Name="SpinIcon" Width="20" Height="20"
+                                  Stretch="Uniform" Visibility="Collapsed"
+                                  Data="M12,2 A10,10 0 0,1 22,12"
+                                  Stroke="#3B82F6" StrokeThickness="2.5"
+                                  StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                  RenderTransformOrigin="0.5,0.5">
+                                <Path.RenderTransform>
+                                    <RotateTransform/>
+                                </Path.RenderTransform>
+                            </Path>
+
+                            <!-- Success 图标 -->
+                            <Viewbox x:Name="SuccessIcon" Visibility="Collapsed">
+                                <Canvas Width="24" Height="24">
+                                    <Ellipse Width="22" Height="22" Canvas.Left="1" Canvas.Top="1"
+                                             Stroke="#22C55E" StrokeThickness="2"/>
+                                    <Polyline Points="7,12 10,15 17,9"
+                                              Stroke="#22C55E" StrokeThickness="2.2"
+                                              StrokeStartLineCap="Round"
+                                              StrokeEndLineCap="Round"
+                                              StrokeLineJoin="Round"/>
+                                </Canvas>
+                            </Viewbox>
+
+                            <!-- Error 图标 -->
+                            <Viewbox x:Name="ErrorIcon" Visibility="Collapsed">
+                                <Canvas Width="24" Height="24">
+                                    <Ellipse Width="22" Height="22" Canvas.Left="1" Canvas.Top="1"
+                                             Stroke="#EF4444" StrokeThickness="2"/>
+                                    <Line X1="9" Y1="9" X2="15" Y2="15"
+                                          Stroke="#EF4444" StrokeThickness="2.2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                    <Line X1="15" Y1="9" X2="9" Y2="15"
+                                          Stroke="#EF4444" StrokeThickness="2.2"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Grid>
+
+                        <!-- 文字区 -->
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock x:Name="TitleText"
+                                       FontFamily="Microsoft YaHei UI"
+                                       FontSize="13" FontWeight="Medium"
+                                       Foreground="{StaticResource TextBrush}"
+                                       TextWrapping="Wrap"
+                                       LineHeight="18"/>
+                            <TextBlock x:Name="DescText"
+                                       FontFamily="Consolas"
+                                       FontSize="11"
+                                       Foreground="{StaticResource MutedBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,4,0,0"
+                                       Visibility="Collapsed"
+                                       LineHeight="16"/>
+                        </StackPanel>
+
+                        <!-- 关闭按钮 -->
+                        <Button Grid.Column="2" x:Name="CloseBtn"
+                                Width="18" Height="18"
+                                Margin="10,-2,0,0"
+                                VerticalAlignment="Top"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Cursor="Hand"
+                                Click="CloseBtn_Click"
+                                Opacity="0.5">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Grid Background="Transparent">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Grid>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Opacity" Value="1"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                            <Viewbox Width="12" Height="12">
+                                <Canvas Width="14" Height="14">
+                                    <Line X1="2" Y1="2" X2="12" Y2="12"
+                                          Stroke="#94A3B8" StrokeThickness="1.8"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                    <Line X1="12" Y1="2" X2="2" Y2="12"
+                                          Stroke="#94A3B8" StrokeThickness="1.8"
+                                          StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+                                </Canvas>
+                            </Viewbox>
+                        </Button>
+                    </Grid>
+                </Grid>
+
+                <!-- ── 底部倒计时进度条 ── -->
+                <Grid Grid.Row="1" Height="2">
+                    <Rectangle x:Name="ProgressBar"
+                               HorizontalAlignment="Left"
+                               Height="2" Width="316"
+                               Opacity="0.45">
+                        <Rectangle.Fill>
+                            <SolidColorBrush x:Name="ProgressBrush" Color="#3B82F6"/>
+                        </Rectangle.Fill>
+                    </Rectangle>
+                </Grid>
+
+            </Grid>
+        </Border>
+    </Border>
+</Window>

@@ -1,0 +1,1021 @@
+﻿<Window x:Class="AIvisiontest.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:prism="http://prismlibrary.com/"
+        xmlns:models="clr-namespace:AIvisiontest.Enums"
+        prism:ViewModelLocator.AutoWireViewModel="True"
+        Title="VisionGuard — YOLO 工业视觉检测系统 v2.4"
+        Height="840" Width="1460"
+        MinWidth="1100" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        Background="#FF050C14"
+        Foreground="#FFC8E8FF"
+        FontFamily="Microsoft YaHei UI"
+        WindowStyle="None"
+        AllowsTransparency="False">
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!--  RESOURCES                                                      -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <Window.Resources>
+
+        <!-- 日志条目模板 -->
+        <DataTemplate x:Key="LogItemTp1">
+            <Grid Margin="0,1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="52"/>
+                    <!-- 时间 -->
+                    <ColumnDefinition Width="32"/>
+                    <!-- 级别 -->
+                    <ColumnDefinition Width="*"/>
+                    <!-- 消息 -->
+                </Grid.ColumnDefinitions>
+
+                <!-- 时间 -->
+                <TextBlock Grid.Column="0"
+                       Text="{Binding TimeText}"
+                       Foreground="#606880"
+                       FontSize="10"
+                       VerticalAlignment="Center"/>
+
+                <!-- 级别标签（带颜色） -->
+                <Border Grid.Column="1"
+                    Background="Transparent"
+                    CornerRadius="2"
+                    Padding="3,1"
+                    Margin="2,0">
+                    <TextBlock Text="{Binding LevelText}"
+                           Foreground="{Binding LevelColor}"
+                           FontSize="9"
+                           FontWeight="Bold"
+                           HorizontalAlignment="Center"/>
+                </Border>
+
+                <!-- 消息内容 -->
+                <TextBlock Grid.Column="2"
+                       Text="{Binding Message}"
+                       Foreground="{Binding MessageColor}"
+                       FontSize="10"
+                       TextWrapping="NoWrap"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center"
+                       Margin="4,0,0,0"
+                       ToolTip="{Binding Message}"/>
+            </Grid>
+        </DataTemplate>
+
+
+        <!-- ── Glow Effects ── -->
+        <DropShadowEffect x:Key="CyanGlow"  Color="#00D4FF" BlurRadius="10" ShadowDepth="0" Opacity="0.9"/>
+        <DropShadowEffect x:Key="GreenGlow" Color="#00FF88" BlurRadius="8"  ShadowDepth="0" Opacity="0.9"/>
+        <DropShadowEffect x:Key="RedGlow"   Color="#FF2D55" BlurRadius="14" ShadowDepth="0" Opacity="0.85"/>
+        <DropShadowEffect x:Key="OrangeGlow" Color="#FF6B35" BlurRadius="8"  ShadowDepth="0" Opacity="0.8"/>
+
+        <!-- ── Common Brushes ── -->
+        <SolidColorBrush x:Key="PanelBg"     Color="#FF081828"/>
+        <SolidColorBrush x:Key="PanelBg2"    Color="#FF0B1F35"/>
+        <SolidColorBrush x:Key="BorderBrush" Color="#FF1A4A7A"/>
+        <SolidColorBrush x:Key="AccentBrush" Color="#FF00D4FF"/>
+        <SolidColorBrush x:Key="DimBrush"    Color="#FF4A7A9A"/>
+        <SolidColorBrush x:Key="TextBrush"   Color="#FFC8E8FF"/>
+
+        <!-- ── Panel Border Style ── -->
+        <Style x:Key="Panel" TargetType="Border">
+            <Setter Property="Background"       Value="{StaticResource PanelBg}"/>
+            <Setter Property="BorderBrush"      Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness"  Value="1"/>
+            <Setter Property="CornerRadius"     Value="3"/>
+        </Style>
+
+        <!-- ── Panel Header Border ── -->
+        <Style x:Key="PanelHeader" TargetType="Border">
+            <Setter Property="Background"      Value="{StaticResource PanelBg2}"/>
+            <Setter Property="BorderBrush"     Value="{StaticResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="Padding"         Value="14,9"/>
+        </Style>
+
+        <!-- ── Panel Title ── -->
+        <Style x:Key="PanelTitle" TargetType="TextBlock">
+            <Setter Property="FontFamily"   Value="Consolas"/>
+            <Setter Property="FontSize"     Value="11"/>
+            <Setter Property="FontWeight"   Value="Bold"/>
+            <Setter Property="Foreground"   Value="{StaticResource AccentBrush}"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+        </Style>
+
+        <!-- ── Mono Small ── -->
+        <Style x:Key="MonoSmall" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+        </Style>
+
+        <!-- ── Section Label ── -->
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="Consolas"/>
+            <Setter Property="FontSize"   Value="10"/>
+            <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+            <Setter Property="Margin"     Value="0,0,0,7"/>
+        </Style>
+
+        <!-- ── Primary Button ── -->
+        <Style x:Key="BtnPrimary" TargetType="Button">
+            <Setter Property="Background"    Value="#FF00D4FF"/>
+            <Setter Property="Foreground"    Value="#FF050C14"/>
+            <Setter Property="FontFamily"    Value="Microsoft YaHei UI"/>
+            <Setter Property="FontWeight"    Value="Bold"/>
+            <Setter Property="FontSize"      Value="13"/>
+            <Setter Property="Padding"       Value="22,8"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor"        Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="3"
+                                Background="{TemplateBinding Background}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="White"/>
+                                <Setter TargetName="Bd" Property="Effect">
+                                    <Setter.Value>
+                                        <DropShadowEffect Color="#00D4FF" BlurRadius="14" ShadowDepth="0"/>
+                                    </Setter.Value>
+                                </Setter>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FFB8F4FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Outline Button ── -->
+        <Style x:Key="BtnOutline" TargetType="Button">
+            <Setter Property="Background"      Value="Transparent"/>
+            <Setter Property="Foreground"      Value="{StaticResource DimBrush}"/>
+            <Setter Property="FontFamily"      Value="Microsoft YaHei UI"/>
+            <Setter Property="FontSize"        Value="12"/>
+            <Setter Property="Padding"         Value="14,7"/>
+            <Setter Property="Cursor"          Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="3"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#FF1A4A7A" BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="#FF00D4FF"/>
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#FF00D4FF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Danger Button ── -->
+        <Style x:Key="BtnDanger" TargetType="Button" BasedOn="{StaticResource BtnOutline}">
+            <Setter Property="Foreground" Value="#FFFF2D55"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" CornerRadius="3"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="#FFFF2D55" BorderThickness="1"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#FFFF2D55"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Toggle CheckBox ── -->
+        <Style x:Key="Toggle" TargetType="CheckBox">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="CheckBox">
+                        <Border x:Name="Track" Width="40" Height="22"
+                                Background="#FF1A4A7A" CornerRadius="11">
+                            <Ellipse x:Name="Thumb" Width="15" Height="15"
+                                     Fill="White" HorizontalAlignment="Left"
+                                     Margin="3,0,0,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="Track" Property="Background" Value="#FF00FF88"/>
+                                <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                                <Setter TargetName="Thumb" Property="Margin" Value="0,0,3,0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Dark Slider ── -->
+        <Style x:Key="DarkSlider" TargetType="Slider">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Slider">
+                        <Grid Height="18" VerticalAlignment="Center">
+                            <Track x:Name="PART_Track">
+                                <Track.DecreaseRepeatButton>
+                                    <RepeatButton Command="Slider.DecreaseLarge"
+                                                  IsTabStop="False" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate>
+                                                <Border Height="3" Background="#FF00D4FF" CornerRadius="1.5"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.DecreaseRepeatButton>
+                                <Track.Thumb>
+                                    <Thumb IsTabStop="False">
+                                        <Thumb.Template>
+                                            <ControlTemplate>
+                                                <Ellipse Width="14" Height="14"
+                                                         Fill="#FF00D4FF"
+                                                         Effect="{StaticResource CyanGlow}"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                                <Track.IncreaseRepeatButton>
+                                    <RepeatButton Command="Slider.IncreaseLarge"
+                                                  IsTabStop="False" Focusable="False">
+                                        <RepeatButton.Template>
+                                            <ControlTemplate>
+                                                <Border Height="3" Background="#FF1A4A7A" CornerRadius="1.5"/>
+                                            </ControlTemplate>
+                                        </RepeatButton.Template>
+                                    </RepeatButton>
+                                </Track.IncreaseRepeatButton>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ── Dark ComboBox ── -->
+        <Style x:Key="DarkCombo" TargetType="ComboBox">
+            <Setter Property="Background"      Value="#FF020A12"/>
+            <Setter Property="Foreground"      Value="#FFC8E8FF"/>
+            <Setter Property="BorderBrush"     Value="#FF1A4A7A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontFamily"      Value="Consolas"/>
+            <Setter Property="FontSize"        Value="11"/>
+            <Setter Property="Height"          Value="28"/>
+            <Setter Property="Padding"         Value="8,0"/>
+        </Style>
+
+        <!-- ── Stat Cell ── -->
+        <Style x:Key="StatCell" TargetType="Border">
+            <Setter Property="Background"      Value="#FF020A12"/>
+            <Setter Property="BorderBrush"     Value="#FF1A4A7A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="3"/>
+            <Setter Property="Padding"         Value="6,8"/>
+        </Style>
+
+        <!-- ── Mat Tag ── -->
+        <Style x:Key="MatTag" TargetType="Border">
+            <Setter Property="BorderBrush"     Value="#FF1A4A7A"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius"    Value="2"/>
+            <Setter Property="Padding"         Value="8,3"/>
+            <Setter Property="Margin"          Value="0,0,5,5"/>
+        </Style>
+
+        <!-- ── Detection List Item Template ── -->
+        <DataTemplate x:Key="DetItemTpl">
+            <Border Margin="0,0,0,5" Padding="10,8"
+                    Background="#FF020A12" CornerRadius="3"
+                    BorderThickness="1"
+                    >
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="4"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="5"/>
+                        <RowDefinition Height="3"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Name + Confidence -->
+                    <Grid Grid.Row="0">
+                        <TextBlock Text="{Binding Label}"
+                                   FontSize="13" FontWeight="SemiBold"
+                                   Foreground="#FFC8E8FF"/>
+                        <TextBlock HorizontalAlignment="Right"
+                                   Text="{Binding ConfText}"
+                                   FontFamily="Consolas" FontSize="12"
+                                   />
+                    </Grid>
+
+                    <!-- Size + Type Badge -->
+                    <Grid Grid.Row="2">
+                        <TextBlock Text="{Binding SizeText}"
+                                   FontFamily="Consolas" FontSize="10"
+                                   Foreground="{StaticResource DimBrush}"
+                                   VerticalAlignment="Center"/>
+                        <Border HorizontalAlignment="Right"
+                                Padding="6,1" CornerRadius="2"
+                                >
+                            <TextBlock Text="{Binding TypeTag}"
+                                       FontFamily="Consolas" FontSize="9"
+                                       FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                    </Grid>
+
+                    <!-- Confidence bar background -->
+                    <Border Grid.Row="4" Background="#FF1A4A7A" CornerRadius="1" Height="3"/>
+                    <!-- Confidence bar fill -->
+                    <Border Grid.Row="4" CornerRadius="1" Height="3"
+                            HorizontalAlignment="Left"
+                            Width="{Binding ConfBarWidth}"
+                            />
+                </Grid>
+            </Border>
+        </DataTemplate>
+
+        <!-- ── Log Item Template ── -->
+        <DataTemplate x:Key="LogItemTpl">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="{Binding Time}"
+                           FontFamily="Consolas" FontSize="11"
+                           Foreground="#FF3A6A8A" MinWidth="75"
+                           Margin="0,0,10,0"/>
+                <TextBlock Text="{Binding Level}"
+                           FontFamily="Consolas" FontSize="11"
+                           MinWidth="58" Margin="0,0,10,0">
+                    <TextBlock.Foreground>
+                        <Binding Path="LevelColor" />
+                    </TextBlock.Foreground>
+                </TextBlock>
+                <TextBlock Text="{Binding Message}"
+                           FontFamily="Microsoft YaHei UI" FontSize="11"
+                           Foreground="#FFC8E8FF"/>
+            </StackPanel>
+        </DataTemplate>
+
+        <!-- ── ScrollBar Thin Style ── -->
+        <Style TargetType="ScrollBar">
+            <Setter Property="Width"      Value="5"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid>
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate>
+                                                <Border Background="#FF1A4A7A" CornerRadius="2.5"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        
+    </Window.Resources>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!--  ROOT — custom title bar + grid-background                     -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44"/>
+            <!-- 0 Custom title bar -->
+            <RowDefinition Height="*"/>
+            <!-- 1 Main content -->
+            <RowDefinition Height="128"/>
+            <!-- 2 Log panel -->
+        </Grid.RowDefinitions>
+
+        <!-- subtle dot-grid background painted on the whole window -->
+        <Canvas x:Name="DotGrid" Grid.RowSpan="3" IsHitTestVisible="False">
+            <Canvas.Background>
+                <DrawingBrush TileMode="Tile" Viewport="0,0,40,40"
+                              ViewportUnits="Absolute">
+                    <DrawingBrush.Drawing>
+                        <DrawingGroup>
+                            <GeometryDrawing Brush="#06C8E8FF">
+                                <GeometryDrawing.Geometry>
+                                    <EllipseGeometry RadiusX="0.8" RadiusY="0.8" Center="0,0"/>
+                                </GeometryDrawing.Geometry>
+                            </GeometryDrawing>
+                        </DrawingGroup>
+                    </DrawingBrush.Drawing>
+                </DrawingBrush>
+            </Canvas.Background>
+        </Canvas>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!--  ROW 0 — Title Bar (draggable custom chrome)               -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="0"
+                Background="#EF050C14"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,0,1"
+                x:Name="TitleBar"
+                >
+            <Grid Margin="16,0">
+                <!-- Logo + title -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="30" Height="30" CornerRadius="4"
+                            BorderBrush="#FF00D4FF" BorderThickness="1.5"
+                            Effect="{StaticResource CyanGlow}">
+                        <TextBlock Text="AI" FontFamily="Consolas" FontSize="12"
+                                   FontWeight="Bold" Foreground="#FF00D4FF"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="VISIONGUARD"
+                                   FontFamily="Consolas" FontSize="14" FontWeight="Bold"
+                                   Foreground="#FF00D4FF" Effect="{StaticResource CyanGlow}"/>
+                        <TextBlock Text="YOLO · 工业视觉缺陷检测系统 v2.4"
+                                   FontFamily="Consolas" FontSize="9"
+                                   Foreground="{StaticResource DimBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Right status + window buttons -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <!-- Status dots -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Ellipse Width="7" Height="7" 
+                                 Fill="{Binding ModelStatusColor}"
+                                 Effect="{StaticResource GreenGlow}"
+                                 Margin="0,0,10,0"/>
+                        <TextBlock Text="Model Loaded" Style="{StaticResource MonoSmall}"/>
+                    </StackPanel>
+                    <TextBlock Text="GPU: RTX3070 | CUDA 12.1"
+                               Style="{StaticResource MonoSmall}" VerticalAlignment="Center"/>
+                    <TextBlock Text="{Binding ClockText}"
+                               FontFamily="Consolas" FontSize="11"
+                               Foreground="{StaticResource DimBrush}"
+                               VerticalAlignment="Center"/>
+
+                    <!-- Window controls -->
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                        <Button Content="─" Width="38" Height="32"
+                                Style="{StaticResource BtnOutline}"
+                                Command="{Binding MinButton}"
+                                Padding="0" FontSize="14"
+                                />
+                        <Button Content="□" Width="38" Height="32"
+                                Style="{StaticResource BtnOutline}"
+                                Command="{Binding MaxButton}"
+                                Padding="0" FontSize="12"
+                                />
+                        <Button Content="✕" Width="38" Height="32"
+                                Style="{StaticResource BtnDanger}"
+                                Command="{Binding Exit}"
+                                Padding="0" FontSize="12"
+                                />
+                    </StackPanel>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!--  ROW 1 — Three-column main content                         -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <Grid Grid.Row="1" Margin="7,6,7,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="268"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="292"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- ──────────────────────────────────────────────────────
+                 COLUMN 0 — Config Panel
+            ──────────────────────────────────────────────────────── -->
+            <Border Grid.Column="0" Style="{StaticResource Panel}" Margin="0,0,5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <Border Grid.Row="0" Style="{StaticResource PanelHeader}">
+                        <TextBlock Text="⚙  检测配置" Style="{StaticResource PanelTitle}"/>
+                    </Border>
+
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled">
+                        <StackPanel Margin="13,11,13,13">
+
+                            <!-- Model select -->
+                            <TextBlock Text="INFERENCE MODEL" Style="{StaticResource SectionLabel}"/>
+                            <Button Content="加载模型权重文件 (.onnx)"
+                                    Style="{StaticResource BtnOutline}"
+                                    Command="{Binding LoadModelCommand}"
+                                    Margin="0,0,0,11"/>
+                            <TextBlock Text="内置模型: YOLOv8s-seg.onnx" FontSize="11" Foreground="#FF8EC8E0" Margin="0,0,0,14"/>
+                            
+                            <Separator Background="#FF1A4A7A" Margin="0,0,0,13"/>
+
+                            <!-- Params -->
+                            <TextBlock Text="DETECTION PARAMS" Style="{StaticResource SectionLabel}"/>
+
+                            <Grid Margin="0,0,0,2">
+                                <TextBlock Text="置信度阈值" FontSize="11" Foreground="#FF8EC8E0"/>
+                                <TextBlock HorizontalAlignment="Right"
+                                           Text="{Binding ConfThreshold, StringFormat='{}{0:F2}'}"
+                                           FontFamily="Consolas" FontSize="11"
+                                           Foreground="#FF00D4FF" FontWeight="Bold"/>
+                            </Grid>
+                            <Slider Style="{StaticResource DarkSlider}"
+                                    Minimum="0.10" Maximum="0.90"
+                                    Value="{Binding ConfThreshold, Mode=TwoWay}"
+                                    Margin="0,0,0,11"/>
+
+                            <Grid Margin="0,0,0,2">
+                                <TextBlock Text="NMS-IOU 阈值" FontSize="11" Foreground="#FF8EC8E0"/>
+                                <TextBlock HorizontalAlignment="Right"
+                                           Text="{Binding IouThreshold, StringFormat='{}{0:F2}'}"
+                                           FontFamily="Consolas" FontSize="11"
+                                           Foreground="#FF00D4FF" FontWeight="Bold"/>
+                            </Grid>
+                            <Slider Style="{StaticResource DarkSlider}"
+                                    Minimum="0.10" Maximum="0.90"
+                                    Value="{Binding IouThreshold, Mode=TwoWay}"
+                                    Margin="0,0,0,11"/>
+
+                            <Grid Margin="0,0,0,2">
+                                <TextBlock Text="最大检测数量" FontSize="11" Foreground="#FF8EC8E0"/>
+                                <TextBlock HorizontalAlignment="Right"
+                                           Text="{Binding MaxDetections}"
+                                           FontFamily="Consolas" FontSize="11"
+                                           Foreground="#FF00D4FF" FontWeight="Bold"/>
+                            </Grid>
+                            <Slider Style="{StaticResource DarkSlider}"
+                                    Minimum="1" Maximum="100"
+                                    Value="{Binding MaxDetections, Mode=TwoWay}"
+                                    Margin="0,0,0,14"/>
+
+                            <Separator Background="#FF1A4A7A" Margin="0,0,0,13"/>
+
+                            <!-- Toggles -->
+                            <TextBlock Text="FEATURE TOGGLES" Style="{StaticResource SectionLabel}"/>
+                            <Grid Margin="0,0,0,10">
+                                <TextBlock Text="实例分割" FontSize="12" Foreground="#FFC8E8FF" VerticalAlignment="Center"/>
+                                <CheckBox HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource Toggle}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,10">
+                                <TextBlock Text="缺陷热图" FontSize="12" Foreground="#FFC8E8FF" VerticalAlignment="Center"/>
+                                <CheckBox HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource Toggle}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,10">
+                                <TextBlock Text="报警推送" FontSize="12" Foreground="#FFC8E8FF" VerticalAlignment="Center"/>
+                                <CheckBox HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource Toggle}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,10">
+                                <TextBlock Text="轨迹追踪" FontSize="12" Foreground="#FFC8E8FF" VerticalAlignment="Center"/>
+                                <CheckBox HorizontalAlignment="Right" IsChecked="False" Style="{StaticResource Toggle}"/>
+                            </Grid>
+                            <Grid Margin="0,0,0,14">
+                                <TextBlock Text="自动截图存档" FontSize="12" Foreground="#FFC8E8FF" VerticalAlignment="Center"/>
+                                <CheckBox HorizontalAlignment="Right" IsChecked="True" Style="{StaticResource Toggle}"/>
+                            </Grid>
+
+                            <Separator Background="#FF1A4A7A" Margin="0,0,0,13"/>
+
+                            <!-- Material tags -->
+                            <TextBlock Text="晶圆缺陷类型" Style="{StaticResource SectionLabel}"/>
+                            <WrapPanel>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Center" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Donut" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Edge-Loc" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Edge-Ring" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Loc" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Near-full" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Scratch" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                                <Border Style="{StaticResource MatTag}">
+                                    <TextBlock Text="Random" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                            </WrapPanel>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+
+            <!-- ──────────────────────────────────────────────────────
+                 COLUMN 1 — Camera Feed + Overlay
+            ──────────────────────────────────────────────────────── -->
+            <Border Grid.Column="1" Style="{StaticResource Panel}" Margin="0,0,5,0">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    
+
+                    <!-- Header -->
+                    <Border Grid.Row="0" Style="{StaticResource PanelHeader}">
+                        <Grid>
+                            <TextBlock Text="⬛  检测画面" Style="{StaticResource PanelTitle}"/>
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Right">
+                                <!-- Live badge -->
+                                <Border Padding="7,2" CornerRadius="2" Background="#FF091E12">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Ellipse Width="6" Height="6">
+                                            <Ellipse.Style>
+                                                <Style TargetType="Ellipse">
+                                                    <Setter Property="Fill" Value="#FF4A7A9A"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLive}" Value="True">
+                                                            <Setter Property="Fill" Value="#FF00FF88"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Ellipse.Style>
+                                        </Ellipse>
+                                        <TextBlock FontFamily="Consolas" FontSize="10">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Text" Value="○ IDLE"/>
+                                                    <Setter Property="Foreground" Value="#FF4A7A9A"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsLive}" Value="True">
+                                                            <Setter Property="Text" Value="● LIVE"/>
+                                                            <Setter Property="Foreground" Value="#FF00FF88"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Border>
+                                <Border Padding="7,2" CornerRadius="2"
+                                        Background="{StaticResource PanelBg}"
+                                        BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                    <TextBlock Text="1920 × 1080" Style="{StaticResource MonoSmall}"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+              
+                    <!-- Video + Overlay Canvas -->
+             
+                    <Grid Grid.Row="1" Background="#FF020A12"
+                          ClipToBounds="True" x:Name="VideoGrid">
+
+                        <Image x:Name="VideoStreamImage" Stretch="Uniform" 
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Source="{Binding BackgroundImageSource}"/>
+
+                        
+                        <Canvas x:Name="SceneCanvas"/>
+
+                        <Canvas x:Name="OverlayCanvas" IsHitTestVisible="False"/>
+
+                        <!-- Scan line canvas -->
+                        <Canvas x:Name="ScanCanvas" IsHitTestVisible="False"/>
+
+                        <!-- Corner decorators -->
+                        <Canvas IsHitTestVisible="False">
+                            <Path Canvas.Left="10" Canvas.Top="10"
+                                  Data="M 0,18 L 0,0 L 18,0"
+                                  Stroke="#8000D4FF" StrokeThickness="1.8"/>
+                            <Path Canvas.Right="10" Canvas.Top="10"
+                                  HorizontalAlignment="Right"
+                                  Data="M 0,0 L 18,0 L 18,18"
+                                  Stroke="#8000D4FF" StrokeThickness="1.8"/>
+                        </Canvas>
+
+                        <!-- Alarm flash overlay -->
+                        <Border IsHitTestVisible="False"
+                                Background="#22FF2D55"
+                                x:Name="AlarmFlash" Opacity="0"/>
+
+                        <!-- Alarm banner -->
+                        
+
+                        <!-- FPS counter -->
+                        <Border VerticalAlignment="Top" HorizontalAlignment="Center"
+                                Margin="0,10,0,0" Padding="10,3"
+                                Background="#AA020A12" CornerRadius="2"
+                                BorderBrush="#3300FF88" BorderThickness="1">
+                            <TextBlock Text="{Binding FpsText}"
+                                       FontFamily="Consolas" FontSize="12"
+                                       Foreground="#FF00FF88"
+                                       Effect="{StaticResource GreenGlow}"/>
+                        </Border>
+
+                        <!-- Inference tag -->
+                        <Border VerticalAlignment="Bottom" HorizontalAlignment="Right"
+                                Margin="0,0,14,14" Padding="8,3"
+                                Background="#AA020A12" CornerRadius="2"
+                                BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                            <TextBlock Text="{Binding InferText}"
+                                       FontFamily="Consolas" FontSize="11"
+                                       Foreground="{StaticResource DimBrush}"/>
+                        </Border>
+
+                       
+                    </Grid>
+
+                    <!-- Controls bar -->
+                    <Border Grid.Row="2"
+                            Background="{StaticResource PanelBg2}"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,1,0,0"
+                            Padding="13,10">
+                        <Grid>
+                            <StackPanel Orientation="Horizontal">
+
+                                <Button Style="{StaticResource NavArrowBtn}"
+                                        Content="◀"
+                                        Command="{Binding PrevImageCommand}"
+                                        IsEnabled="{Binding IsManualMode}"
+                                        />
+                                
+                                <!-- 手动模式按钮 -->
+                                <Button Style="{StaticResource NavArrowBtn}"
+                                        Content="▶"
+                                        Command="{Binding NextImageCommand}"
+                                        IsEnabled="{Binding IsManualMode}"/>
+
+                            </StackPanel>
+                            <!-- 右侧按钮组 -->
+                            <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Right">
+
+
+                                
+                                <!-- 模式选择：ToggleButton 并排互斥 -->
+                                <Border CornerRadius="3" BorderThickness="1"
+                                            BorderBrush="#3300FF88" Background="#AA020A12"
+                                            Margin="0,0,10,0" VerticalAlignment="Center">
+                                    <StackPanel Orientation="Horizontal">
+                                        <ToggleButton Content="实时"
+                                            IsChecked="{Binding IsRealTimeMode,Mode=OneWay}"
+                                            Command="{Binding SwitchToRealTimeCommand}"
+                                            Style="{StaticResource ModeToggleBtn}"
+                                            BorderThickness="0,0,1,0" Cursor="Hand"/>
+                                        <ToggleButton Content="手动"
+                                            IsChecked="{Binding IsManualMode,Mode=OneWay}"
+                                            Command="{Binding SwitchToManualCommand}"
+                                            Style="{StaticResource ModeToggleBtn}"
+                                            BorderThickness="0"/>
+                                    </StackPanel>
+                                </Border>
+                                
+                                <Button Style="{StaticResource BtnOutline}"
+                                            Content="📷 截图"
+                                            Command="{Binding CaptureFrameCommand}"
+                                            Margin="0 0 10 0"/>
+                                
+                                <Button Style="{StaticResource BtnOutline}"
+                                            Content="统计分析"
+                                            Command="{Binding StatisticsAnalysis}"
+                                            Margin="0 0 10 0"/>
+                                <Button Style="{StaticResource BtnDanger}"
+                                            Content="⚠ 触发告警"
+                                            Command="{Binding TriggerAlarmCommand}" 
+                                            Margin="0 0 10 0"
+                                            />
+
+                                <!-- 分隔线 -->
+                                <Rectangle Width="1" Fill="#3300FF88" Margin="0,6,16,6"/>
+
+                                <!-- 开始检测（独立一组） -->
+                                <Button Style="{StaticResource BtnPrimary}"
+                                        Content="开始检测"
+                                        Command="{Binding ToggleDetectionCommand}"
+                                        Margin="0 0 10 0"
+                                        MinWidth="80"/>
+                                <!-- 开始检测（独立一组） -->
+                                <Button Style="{StaticResource BtnOutline}"
+                                        Content="暂停检测"
+                                        Command="{Binding PauseDetectionCommand}"
+                                        Margin="0 0 10 0"
+                                        MinWidth="80"/>
+                                <Button Style="{StaticResource BtnDanger}"
+                                        Content="停止检测"
+                                        Command="{Binding StopDetectionCommand}"
+                                        MinWidth="80"/>
+                            </StackPanel>
+
+
+                        </Grid>
+                    </Border>
+                </Grid>
+            </Border>
+
+            <!-- ──────────────────────────────────────────────────────
+                 COLUMN 2 — Results Panel
+            ──────────────────────────────────────────────────────── -->
+            <Border Grid.Column="2" Style="{StaticResource Panel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Header -->
+                    <Border Grid.Row="0" Style="{StaticResource PanelHeader}">
+                        <Grid>
+                            <TextBlock Text="◈  检测结果" Style="{StaticResource PanelTitle}"/>
+                            <Border HorizontalAlignment="Right" Padding="6,1" CornerRadius="2"
+                                    Background="{StaticResource PanelBg}"
+                                    BorderBrush="{StaticResource BorderBrush}" BorderThickness="1">
+                                <TextBlock Text="{Binding DetCountText}"
+                                           FontFamily="Consolas" FontSize="10"
+                                           Foreground="{StaticResource DimBrush}"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <!-- Detection list -->
+                    <ListBox Grid.Row="1"
+                             x:Name="DetListBox"
+                             ItemsSource="{Binding Detections}"
+                             ItemTemplate="{StaticResource DetItemTpl}"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="8,6"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto">
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Background"                Value="Transparent"/>
+                                <Setter Property="BorderThickness"           Value="0"/>
+                                <Setter Property="Padding"                   Value="0"/>
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <ContentPresenter/>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+
+                    <!-- Stats grid -->
+                    <Grid Grid.Row="2" Margin="8,0,8,8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition/>
+                            <ColumnDefinition Width="7"/>
+                            <ColumnDefinition/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="60"/>
+                            <RowDefinition Height="7"/>
+                            <RowDefinition Height="60"/>
+                        </Grid.RowDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource StatCell}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TotalFrames}"
+                                           FontFamily="Consolas" FontSize="20" FontWeight="Bold"
+                                           Foreground="#FF00D4FF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="总帧数" FontFamily="Consolas" FontSize="9"
+                                           Foreground="{StaticResource DimBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource StatCell}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TotalDefects}"
+                                           FontFamily="Consolas" FontSize="20" FontWeight="Bold"
+                                           Foreground="#FFFF6B35" HorizontalAlignment="Center"/>
+                                <TextBlock Text="缺陷数" FontFamily="Consolas" FontSize="9"
+                                           Foreground="{StaticResource DimBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource StatCell}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock 
+                                           FontFamily="Consolas" FontSize="17" FontWeight="Bold"
+                                           Foreground="#FF00FF88" HorizontalAlignment="Center"
+                                           Effect="{StaticResource GreenGlow}"/>
+                                <TextBlock Text="良品率" FontFamily="Consolas" FontSize="9"
+                                           Foreground="{StaticResource DimBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource StatCell}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding TotalDets}"
+                                           FontFamily="Consolas" FontSize="20" FontWeight="Bold"
+                                           Foreground="#FF00D4FF" HorizontalAlignment="Center"/>
+                                <TextBlock Text="总检测" FontFamily="Consolas" FontSize="9"
+                                           Foreground="{StaticResource DimBrush}" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <!--  ROW 2 — Log Panel                                         -->
+        <!-- ═══════════════════════════════════════════════════════════ -->
+        <Border Grid.Row="2"
+                Background="#FF020A12"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,1,0,0"
+                Margin="7,0,7,6">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="24"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0"
+                        Background="{StaticResource PanelBg}"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="0,0,0,1"
+                        Padding="13,0">
+                    <TextBlock Text="▸  系统日志"
+                               Style="{StaticResource PanelTitle}"
+                               FontSize="10"
+                               VerticalAlignment="Center"/>
+                </Border>
+
+                <ListBox Grid.Row="1"
+                         x:Name="LogListBox"
+                         ItemsSource="{Binding Logs}"
+                         ItemTemplate="{StaticResource LogItemTpl}"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="13,4"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Background"   Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                            <Setter Property="Padding"      Value="0,1"/>
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <ContentPresenter/>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>
